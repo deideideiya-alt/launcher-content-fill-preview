@@ -466,6 +466,8 @@
 
   @media (max-width: 1200px) {
     .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* 窄屏恢复自动流，避免显式行/列定位撑出第三列 */
+    #gridColumn .form-item { grid-row: auto !important; grid-column: auto !important; }
   }
   @media (max-width: 768px) {
     .form-grid { grid-template-columns: 1fr; }
@@ -1311,9 +1313,9 @@
           </div>
 
           <!-- ========== 栏目布局 + 泳道（场景3 普通泳道 / 场景4 feed流算法栏目） ========== -->
-          <div class="form-grid" id="gridColumn" style="display:none;">
+          <div class="form-grid" id="gridColumn" data-mode="normal" style="display:none;">
             <!-- 行1：布局类型 / Block类型 / 泳道类型 -->
-            <div class="form-item">
+            <div class="form-item" id="fi-c-layout">
               <label class="form-label"><span class="required-mark">*</span>布局类型</label>
               <div class="select-wrapper">
                 <select id="layoutTypeColumn">
@@ -1323,7 +1325,7 @@
                 <span class="select-arrow"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5 L6 8 L9.5 4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
               </div>
             </div>
-            <div class="form-item">
+            <div class="form-item" id="fi-c-block">
               <label class="form-label"><span class="required-mark">*</span>Block类型</label>
               <div class="radio-group compact" id="blockTypeGroupColumn">
                 <span class="radio-item" data-value="grid"><span class="radio-dot"></span>栅格</span>
@@ -1331,7 +1333,7 @@
                 <span class="radio-item" data-value="epglive"><span class="radio-dot"></span>EPG直播</span>
               </div>
             </div>
-            <div class="form-item">
+            <div class="form-item" id="fi-c-swimlane">
               <label class="form-label"><span class="required-mark">*</span>泳道类型</label>
               <div class="select-wrapper">
                 <select id="swimlaneTypeColumn">
@@ -1342,29 +1344,28 @@
               </div>
             </div>
 
-            <!-- 行2：布局模板 / 画布高 / 画布宽 -->
-            <div class="form-item">
+            <!-- 布局模板（普通泳道显示「请选择」/ feed流显示【1303】模板） -->
+            <div class="form-item" id="fi-c-template">
               <label class="form-label"><span class="required-mark">*</span>布局模板</label>
               <div class="select-wrapper">
                 <select id="layoutTemplateColumn"><option selected>【1303】 单行-8张卡算法泳道(算法泳道*6张卡)</option></select>
                 <span class="select-arrow"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5 L6 8 L9.5 4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
               </div>
             </div>
-            <div class="form-item">
+            <div class="form-item" id="fi-c-canvasH">
               <label class="form-label"><span class="required-mark">*</span>画布高</label>
               <input class="input" type="text" value="1" disabled>
             </div>
-            <div class="form-item">
+            <div class="form-item" id="fi-c-canvasW">
               <label class="form-label"><span class="required-mark">*</span>画布宽</label>
               <input class="input" type="text" value="192" disabled>
             </div>
 
-            <!-- 行3：泳道block数量 / 国际化资源 / 广告播放位置 -->
-            <div class="form-item">
+            <div class="form-item" id="fi-c-blockCount">
               <label class="form-label">泳道block数量</label>
               <input class="input" type="text" value="12" disabled>
             </div>
-            <div class="form-item">
+            <div class="form-item" id="fi-c-i18n">
               <label class="form-label"><span class="required-mark">*</span>国际化资源</label>
               <div class="input-addon">
                 <div class="select-wrapper">
@@ -1376,20 +1377,28 @@
                 </button>
               </div>
             </div>
-            <div class="form-item">
+            <div class="form-item" id="fi-c-adPos">
               <label class="form-label">广告播放位置</label>
               <input class="input" type="text" placeholder="请输入">
             </div>
 
-            <!-- 行4：VOD跳转方式 / 算法场景 + 预览媒资按钮 -->
-            <div class="form-item">
+            <div class="form-item" id="fi-c-vodJump">
               <label class="form-label"><span class="required-mark">*</span>VOD跳转方式</label>
               <div class="radio-group" id="vodJumpGroupColumn">
                 <span class="radio-item checked" data-value="detail"><span class="radio-dot"></span>媒资详情页</span>
                 <span class="radio-item" data-value="fullscreen"><span class="radio-dot"></span>全屏播放页</span>
               </div>
             </div>
-            <div class="form-item">
+            <!-- 启用推荐：仅普通泳道出现；选「否」时隐藏算法场景 -->
+            <div class="form-item" id="fi-c-enableRec">
+              <label class="form-label"><span class="required-mark">*</span>启用推荐</label>
+              <div class="radio-group" id="enableRecommendGroupColumn">
+                <span class="radio-item checked" data-value="yes"><span class="radio-dot"></span>是</span>
+                <span class="radio-item" data-value="no"><span class="radio-dot"></span>否</span>
+              </div>
+            </div>
+            <!-- 算法场景 + 预览媒资按钮：启用推荐=是 才展示 -->
+            <div class="form-item" id="fi-c-algoScene">
               <label class="form-label"><span class="required-mark">*</span>算法场景</label>
               <div class="input-addon">
                 <div class="select-wrapper">
@@ -1406,7 +1415,13 @@
                 </button>
               </div>
             </div>
-            <div></div>
+            <!-- 栏目自动乱序：仅普通泳道出现 -->
+            <div class="form-item" id="fi-c-shuffle">
+              <label class="form-label">栏目自动乱序</label>
+              <div class="switch-wrap">
+                <button type="button" class="switch" id="shuffleSwitchColumn" role="switch" aria-checked="false" aria-label="栏目自动乱序"></button>
+              </div>
+            </div>
           </div>
 
           <!-- 背景预览区：Tab布局 URI 媒资海报左对齐 -->
@@ -1516,11 +1531,14 @@
   bindRadioGroup("vodJumpGroupColumn", function (val) { console.log("栏目布局 VOD跳转方式 =", val); });
   bindRadioGroup("enableRecommendGroup", function (val) { console.log("启用推荐 =", val); });
 
-  // ===== 栏目自动乱序 =====
-  var shuffleSwitch = document.getElementById("shuffleSwitch");
-  shuffleSwitch.addEventListener("click", function () {
-    shuffleSwitch.classList.toggle("on");
-    shuffleSwitch.setAttribute("aria-checked", shuffleSwitch.classList.contains("on"));
+  // ===== 栏目自动乱序（Tab布局 / 栏目布局·普通泳道 共用） =====
+  ["shuffleSwitch", "shuffleSwitchColumn"].forEach(function (id) {
+    var sw = document.getElementById(id);
+    if (!sw) return;
+    sw.addEventListener("click", function () {
+      sw.classList.toggle("on");
+      sw.setAttribute("aria-checked", sw.classList.contains("on"));
+    });
   });
 
   // ===== 推荐block位：清空按钮（Tab布局 / EPG布局 两组） =====
@@ -1671,6 +1689,10 @@
       titleEl.textContent = "预览填充内容 · EPG直播";
       hintEl.textContent = "输入设备dnum后，实时预览EPG直播栏目算法下发的频道填充数据";
       emptyState.textContent = "请输入设备dnum并点击「实时预览」，查看EPG直播栏目算法下发的频道数据";
+    } else if (previewMode === "columnOff") {
+      titleEl.textContent = "预览填充内容";
+      hintEl.textContent = "当前已关闭启用推荐，算法场景下发的媒资数据不可用";
+      emptyState.textContent = "当前已关闭启用推荐，请先将「启用推荐」设为「是」后再预览算法媒资";
     } else if (previewMode === "columnNormal" || previewMode === "feed") {
       var label = currentSceneLabel();
       titleEl.textContent = "预览填充内容 · " + label;
@@ -1688,9 +1710,12 @@
     var cap = document.getElementById("columnPreviewCaption");
     if (!row || !cap) return;
     var isFeed = document.getElementById("swimlaneTypeColumn").value === "feed";
+    var recOff = !isFeed && typeof isRecommendOn === "function" && !isRecommendOn();
     cap.textContent = isFeed
       ? "栏目布局 · feed流算法栏目 · 算法下发媒资预览（无限下拉）"
-      : "栏目布局 · 普通泳道 · 「" + currentSceneLabel() + "」下发媒资预览";
+      : (recOff
+        ? "栏目布局 · 普通泳道 · 未启用推荐（固定编排媒资预览）"
+        : "栏目布局 · 普通泳道 · 「" + currentSceneLabel() + "」下发媒资预览");
     var count = isFeed ? 16 : 8;
     var html = "";
     for (var i = 0; i < count; i++) {
@@ -1887,6 +1912,60 @@
     dnumError.style.display = "none";
     hideTooltip();
   }
+  // 两种泳道类型的字段与排布不同，用显式 grid 行/列定位按各自截图 1:1 呈现
+  var COLUMN_ITEM_IDS = {
+    layout: "fi-c-layout", block: "fi-c-block", swimlane: "fi-c-swimlane",
+    template: "fi-c-template", canvasH: "fi-c-canvasH", canvasW: "fi-c-canvasW",
+    blockCount: "fi-c-blockCount", i18n: "fi-c-i18n", adPos: "fi-c-adPos",
+    vodJump: "fi-c-vodJump", enableRec: "fi-c-enableRec", algoScene: "fi-c-algoScene",
+    shuffle: "fi-c-shuffle"
+  };
+  var COLUMN_FORM_LAYOUT = {
+    // 普通泳道：布局模板/国际化资源/广告播放位置 → VOD跳转方式/启用推荐/算法场景 → 栏目自动乱序
+    normal: {
+      layout: [1, 1], block: [1, 2], swimlane: [1, 3],
+      template: [2, 1], i18n: [2, 2], adPos: [2, 3],
+      vodJump: [3, 1], enableRec: [3, 2], algoScene: [3, 3],
+      shuffle: [4, 1]
+    },
+    // feed流算法栏目：布局模板/画布高/画布宽 → 泳道block数量/国际化资源/广告播放位置 → VOD跳转方式/算法场景
+    feed: {
+      layout: [1, 1], block: [1, 2], swimlane: [1, 3],
+      template: [2, 1], canvasH: [2, 2], canvasW: [2, 3],
+      blockCount: [3, 1], i18n: [3, 2], adPos: [3, 3],
+      vodJump: [4, 1], algoScene: [4, 2]
+    }
+  };
+  function isRecommendOn() {
+    var checked = document.querySelector("#enableRecommendGroupColumn .radio-item.checked");
+    return !checked || checked.dataset.value === "yes";
+  }
+  function applyColumnFormLayout() {
+    var conf = COLUMN_FORM_LAYOUT[columnSubMode] || COLUMN_FORM_LAYOUT.normal;
+    var recOn = isRecommendOn();
+    Object.keys(COLUMN_ITEM_IDS).forEach(function (key) {
+      var el = document.getElementById(COLUMN_ITEM_IDS[key]);
+      if (!el) return;
+      var pos = conf[key];
+      var show = !!pos;
+      // 普通泳道且【启用推荐=否】时，不展示算法场景下拉与旁边的预览媒资按钮
+      if (key === "algoScene" && columnSubMode === "normal" && !recOn) show = false;
+      el.style.display = show ? "flex" : "none";
+      if (pos) { el.style.gridRow = pos[0]; el.style.gridColumn = pos[1]; }
+    });
+    document.getElementById("gridColumn").dataset.mode = columnSubMode;
+    // 布局模板：普通泳道「请选择」/ feed流【1303】模板
+    var tpl = document.getElementById("layoutTemplateColumn");
+    if (columnSubMode === "feed") {
+      if (tpl.classList.contains("is-empty") || tpl.value === "") {
+        tpl.innerHTML = '<option selected>【1303】 单行-8张卡算法泳道(算法泳道*6张卡)</option>';
+        tpl.classList.remove("is-empty");
+      }
+    } else if (!tpl.classList.contains("is-empty")) {
+      tpl.innerHTML = '<option value="" selected>请选择</option>';
+      tpl.classList.add("is-empty");
+    }
+  }
   // 场景3：普通泳道 → 3 个算法场景枚举；场景4：feed流算法栏目 → 固定 feed流算法栏目
   function applyColumnSubMode() {
     columnSubMode = swimlaneTypeColumn.value === "feed" ? "feed" : "normal";
@@ -1898,6 +1977,7 @@
       return '<option value="' + o.v + '">' + o.t + '</option>';
     }).join("");
     if (opts.some(function (o) { return o.v === cur; })) algoSceneColumn.value = cur;
+    applyColumnFormLayout();
     renderColumnPreview();
   }
   function syncLayout() {
@@ -1912,7 +1992,9 @@
     previewEpg.style.display = mode === "epg" ? "" : "none";
     applyColumnSubMode();
     previewMode = isEpg ? "epg"
-      : (mode === "column" ? (columnSubMode === "feed" ? "feed" : "columnNormal") : "tab");
+      : (mode === "column"
+        ? (columnSubMode === "feed" ? "feed" : (isRecommendOn() ? "columnNormal" : "columnOff"))
+        : "tab");
     updateModalCopy();
     resetPreview();
   }
@@ -1943,6 +2025,13 @@
     resetPreview();
   });
   bindRadioGroup("enableRecommendGroupEpg");
+  bindRadioGroup("enableRecommendGroupColumn");
+  // 切换【启用推荐】：重新计算算法场景显隐，并同步弹窗模式
+  document.getElementById("enableRecommendGroupColumn").addEventListener("click", function (e) {
+    if (!e.target.closest(".radio-item")) return;
+    closePreviewModal();
+    syncLayout();
+  });
   syncLayout();
 </script>
 </body>
