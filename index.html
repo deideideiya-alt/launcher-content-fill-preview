@@ -555,7 +555,7 @@
     gap: 4px;
     flex-shrink: 0;
   }
-  .dnum-input-wrap { position: relative; width: 320px; }
+  .dnum-input-wrap { position: relative; width: 280px; }
   .dnum-input-wrap .input.is-error { border-color: var(--danger); }
   .dnum-error {
     position: absolute;
@@ -565,6 +565,48 @@
     display: none;
   }
   .dnum-hint { font-size: 12px; color: var(--text-secondary); flex-basis: 100%; }
+
+  /* ===== 国家搜索下拉（零依赖可搜索 combobox） ===== */
+  .country-select { position: relative; width: 200px; flex-shrink: 0; }
+  .country-select__trigger {
+    width: 100%; height: 36px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 0 10px; border: 1px solid var(--border); border-radius: 4px;
+    background: #fff; color: var(--text-regular);
+    font-size: 14px; cursor: pointer; text-align: left;
+  }
+  .country-select__trigger:hover, .country-select__trigger:focus-visible {
+    border-color: var(--primary); outline: none;
+  }
+  .country-select.is-error .country-select__trigger { border-color: var(--danger); }
+  .country-select__value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .country-select__placeholder { color: #a8abb2; }
+  .country-error {
+    position: absolute; left: 0; top: 38px;
+    font-size: 12px; color: var(--danger); display: none;
+  }
+  /* fixed 定位：避免被可滚动的 .modal__body 裁切；打开时由 JS 按触发框位置定位 */
+  .country-panel {
+    position: fixed; z-index: 1100; min-width: 280px;
+    background: #fff; border: 1px solid var(--border); border-radius: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.14); overflow: hidden;
+  }
+  .country-panel__search { padding: 8px; border-bottom: 1px solid var(--border-light); }
+  .country-panel__list { max-height: 216px; overflow-y: auto; }
+  .country-option {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 7px 12px; font-size: 13px; color: var(--text-regular); cursor: pointer;
+  }
+  .country-option:hover, .country-option.is-active { background: #f0f6ff; color: var(--primary); }
+  .country-option[aria-selected="true"] { color: var(--primary); font-weight: 600; }
+  .country-option__en { font-size: 11px; color: var(--text-secondary); margin-left: 5px; }
+  .country-option__code {
+    font-size: 11px; color: var(--text-secondary);
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  .country-panel__empty {
+    padding: 14px; font-size: 12px; color: var(--text-secondary); text-align: center;
+  }
 
   /* 预览标识类型切换（设备dnum / 用户userid） */
   .id-type-switch {
@@ -1458,6 +1500,32 @@
                 <button type="button" class="switch" id="shuffleSwitchColumn" role="switch" aria-checked="false" aria-label="栏目自动乱序"></button>
               </div>
             </div>
+            <!-- 推荐block位：仅普通泳道 + 启用推荐=是 + 算法场景=首屏+首栏目算法场景 时出现，
+                 此时「预览媒资」按钮做在此处（算法场景旁的按钮隐藏） -->
+            <div class="form-item" id="fi-c-blockPos">
+              <label class="form-label">
+                <span class="required-mark">*</span>推荐block位
+                <span class="help-icon" title="算法推荐下发的block位编号，多个用英文逗号分隔；下发媒资条数与该位数一致">
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                    <circle cx="7.5" cy="7.5" r="6.5" stroke="#2f6fe4" stroke-width="1.2"/>
+                    <path d="M7.5 6.8v4" stroke="#2f6fe4" stroke-width="1.4" stroke-linecap="round"/>
+                    <circle cx="7.5" cy="4.6" r="0.8" fill="#2f6fe4"/>
+                  </svg>
+                </span>
+              </label>
+              <div class="input-addon">
+                <div class="input-wrap">
+                  <input class="input" type="text" id="blockPosInputColumn" value="1,2,3,4,5,6,7,8,9,10">
+                  <span class="input-clear" id="blockPosClearColumn" title="清空">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2 L8 8 M8 2 L2 8" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  </span>
+                </div>
+                <button type="button" class="preview-media-btn" id="previewMediaBtnColumnBlock">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8Z" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/></svg>
+                  预览媒资
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- 背景预览区：Tab布局 URI 媒资海报左对齐 -->
@@ -1519,6 +1587,23 @@
     </div>
     <div class="modal__body">
       <div class="dnum-bar">
+        <span class="dnum-label"><span class="required-mark">*</span>国家</span>
+        <div class="country-select" id="countrySelect" data-code="">
+          <button type="button" class="country-select__trigger" id="countryTrigger"
+                  role="combobox" aria-haspopup="listbox" aria-expanded="false"
+                  aria-controls="countryPanel" aria-label="选择国家">
+            <span class="country-select__value country-select__placeholder" id="countryValue">请选择国家</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5 L6 8 L9.5 4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <span class="country-error" id="countryError">请选择国家</span>
+          <div class="country-panel" id="countryPanel" style="display:none;">
+            <div class="country-panel__search">
+              <input class="input" type="text" id="countrySearch" placeholder="搜索国家 / Country" aria-label="搜索国家" autocomplete="off">
+            </div>
+            <div class="country-panel__list" id="countryList" role="listbox" aria-label="国家列表"></div>
+            <div class="country-panel__empty" id="countryEmpty" style="display:none;">未找到匹配的国家</div>
+          </div>
+        </div>
         <span class="dnum-label"><span class="required-mark">*</span>预览标识</span>
         <div class="id-type-switch" id="idTypeSwitch">
           <span class="id-type-item checked" data-type="dnum">设备dnum</span>
@@ -1582,8 +1667,9 @@
     });
   });
 
-  // ===== 推荐block位：清空按钮（Tab布局 / EPG布局 两组） =====
-  [["blockPosInput", "blockPosClear"], ["blockPosInputEpg", "blockPosClearEpg"]].forEach(function (pair) {
+  // ===== 推荐block位：清空按钮（Tab布局 / EPG布局 / 首屏+首栏目算法场景 三组） =====
+  [["blockPosInput", "blockPosClear"], ["blockPosInputEpg", "blockPosClearEpg"],
+   ["blockPosInputColumn", "blockPosClearColumn"]].forEach(function (pair) {
     var inp = document.getElementById(pair[0]);
     var clr = document.getElementById(pair[1]);
     if (!inp || !clr) return;
@@ -1634,6 +1720,148 @@
   document.getElementById("idTypeSwitch").addEventListener("click", function (e) {
     var item = e.target.closest(".id-type-item");
     if (item) applyIdType(item.dataset.type);
+  });
+
+  // ===== 国家搜索下拉：选择国家 + 输入 dnum/userid 后才有算法数据返回 =====
+  var COUNTRIES = [
+    { code: "GLOBAL", zh: "全球", en: "Global" },
+    { code: "BR", zh: "巴西", en: "Brazil" },
+    { code: "US", zh: "美国", en: "United States" },
+    { code: "IN", zh: "印度", en: "India" },
+    { code: "ID", zh: "印度尼西亚", en: "Indonesia" },
+    { code: "MX", zh: "墨西哥", en: "Mexico" },
+    { code: "AR", zh: "阿根廷", en: "Argentina" },
+    { code: "CO", zh: "哥伦比亚", en: "Colombia" },
+    { code: "CL", zh: "智利", en: "Chile" },
+    { code: "PE", zh: "秘鲁", en: "Peru" },
+    { code: "FR", zh: "法国", en: "France" },
+    { code: "DE", zh: "德国", en: "Germany" },
+    { code: "ES", zh: "西班牙", en: "Spain" },
+    { code: "PT", zh: "葡萄牙", en: "Portugal" },
+    { code: "GB", zh: "英国", en: "United Kingdom" },
+    { code: "IT", zh: "意大利", en: "Italy" },
+    { code: "TR", zh: "土耳其", en: "Turkey" },
+    { code: "EG", zh: "埃及", en: "Egypt" },
+    { code: "SA", zh: "沙特阿拉伯", en: "Saudi Arabia" },
+    { code: "AE", zh: "阿联酋", en: "United Arab Emirates" },
+    { code: "ZA", zh: "南非", en: "South Africa" },
+    { code: "TH", zh: "泰国", en: "Thailand" },
+    { code: "VN", zh: "越南", en: "Vietnam" },
+    { code: "PH", zh: "菲律宾", en: "Philippines" },
+    { code: "MY", zh: "马来西亚", en: "Malaysia" },
+    { code: "JP", zh: "日本", en: "Japan" },
+    { code: "KR", zh: "韩国", en: "South Korea" },
+    { code: "RU", zh: "俄罗斯", en: "Russia" },
+    { code: "AU", zh: "澳大利亚", en: "Australia" },
+    { code: "CA", zh: "加拿大", en: "Canada" },
+    { code: "PL", zh: "波兰", en: "Poland" },
+    { code: "NL", zh: "荷兰", en: "Netherlands" }
+  ];
+  var countrySelect = document.getElementById("countrySelect");
+  var countryTrigger = document.getElementById("countryTrigger");
+  var countryValue = document.getElementById("countryValue");
+  var countryError = document.getElementById("countryError");
+  var countryPanel = document.getElementById("countryPanel");
+  var countrySearch = document.getElementById("countrySearch");
+  var countryList = document.getElementById("countryList");
+  var countryEmpty = document.getElementById("countryEmpty");
+  var countryOptions = [];
+  var countryActive = 0;
+  countryTrigger.setAttribute("aria-controls", "countryList");
+  function selectedCountryCode() { return countrySelect.dataset.code || ""; }
+  function selectedCountryLabel() { return countrySelect.dataset.label || ""; }
+  function positionCountryPanel() {
+    var r = countryTrigger.getBoundingClientRect();
+    countryPanel.style.left = r.left + "px";
+    countryPanel.style.top = (r.bottom + 4) + "px";
+    countryPanel.style.width = Math.max(280, r.width) + "px";
+  }
+  function renderCountryOptions(q) {
+    var kw = (q || "").trim().toLowerCase();
+    countryOptions = COUNTRIES.filter(function (c) {
+      return !kw || c.zh.indexOf(kw) >= 0 ||
+        c.en.toLowerCase().indexOf(kw) >= 0 || c.code.toLowerCase().indexOf(kw) >= 0;
+    });
+    if (countryActive >= countryOptions.length) countryActive = 0;
+    countryList.innerHTML = countryOptions.map(function (c, i) {
+      return '<div class="country-option' + (i === countryActive ? " is-active" : "") + '"' +
+        ' id="countryOption-' + i + '" role="option" data-code="' + c.code + '"' +
+        ' aria-selected="' + (selectedCountryCode() === c.code) + '">' +
+        '<span>' + c.zh + '<span class="country-option__en">' + c.en + '</span></span>' +
+        '<span class="country-option__code">' + c.code + '</span></div>';
+    }).join("");
+    countryEmpty.style.display = countryOptions.length ? "none" : "block";
+    countryTrigger.setAttribute("aria-activedescendant",
+      countryOptions.length ? "countryOption-" + countryActive : "");
+  }
+  function openCountryPanel() {
+    countrySearch.value = "";
+    countryActive = 0;
+    renderCountryOptions("");
+    positionCountryPanel();
+    countryPanel.style.display = "block";
+    countryTrigger.setAttribute("aria-expanded", "true");
+    setTimeout(function () { countrySearch.focus(); }, 0);
+  }
+  function closeCountryPanel() {
+    countryPanel.style.display = "none";
+    countryTrigger.setAttribute("aria-expanded", "false");
+    countryTrigger.removeAttribute("aria-activedescendant");
+  }
+  function selectCountry(code) {
+    var c = COUNTRIES.filter(function (x) { return x.code === code; })[0];
+    if (!c) return;
+    countrySelect.dataset.code = c.code;
+    countrySelect.dataset.label = c.zh + " " + c.en + " (" + c.code + ")";
+    countryValue.textContent = c.zh + " " + c.en;
+    countryValue.classList.remove("country-select__placeholder");
+    countrySelect.classList.remove("is-error");
+    countryError.style.display = "none";
+    closeCountryPanel();
+    countryTrigger.focus();
+    // 国家变化使已有下发结果失效；若标识已填，两项齐备后直接返回算法数据
+    if (previewModal.classList.contains("visible")) {
+      if (idValue()) fetchPreview();
+      else invalidateResults();
+    }
+  }
+  countryTrigger.addEventListener("click", function () {
+    if (countryPanel.style.display === "none") openCountryPanel();
+    else closeCountryPanel();
+  });
+  countrySearch.addEventListener("input", function () {
+    countryActive = 0;
+    renderCountryOptions(this.value);
+  });
+  countrySearch.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!countryOptions.length) return;
+      countryActive = (countryActive + (e.key === "ArrowDown" ? 1 : -1) + countryOptions.length) % countryOptions.length;
+      renderCountryOptions(countrySearch.value);
+      var act = countryList.querySelector(".country-option.is-active");
+      if (act && act.scrollIntoView) act.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (countryOptions[countryActive]) selectCountry(countryOptions[countryActive].code);
+    } else if (e.key === "Escape") {
+      e.preventDefault(); e.stopPropagation();
+      closeCountryPanel(); countryTrigger.focus();
+    }
+  });
+  countryList.addEventListener("click", function (e) {
+    var opt = e.target.closest(".country-option");
+    if (opt) selectCountry(opt.dataset.code);
+  });
+  // 用 mousedown 判定外部点击：避免「实时预览」按钮在同一事件里刚展开下拉就被 click 关掉
+  document.addEventListener("mousedown", function (e) {
+    if (countryPanel.style.display !== "none" && !countrySelect.contains(e.target)) closeCountryPanel();
+  });
+  document.querySelector(".modal__body").addEventListener("scroll", function () {
+    if (countryPanel.style.display !== "none") closeCountryPanel();
+  });
+  window.addEventListener("resize", function () {
+    if (countryPanel.style.display !== "none") positionCountryPanel();
   });
 
   // 模拟算法下发数据（真实环境替换为接口返回）
@@ -1697,15 +1925,18 @@
     updatePreviewMeta(!!idValue());   // 关闭后重开弹窗保留上次标识时，说明条同步显示
     previewModal.classList.add("visible");
     document.body.style.overflow = "hidden";
-    setTimeout(function () { dnumInput.focus(); }, 100);
+    // 0ms：等样式生效即可，避免长延时抢走用户已聚焦的国家下拉
+    setTimeout(function () { dnumInput.focus(); }, 0);
   }
   function closePreviewModal() {
+    closeCountryPanel();
     previewModal.classList.remove("visible");
     document.body.style.overflow = "";
     hideTooltip();
   }
 
-  ["previewMediaBtn", "previewMediaBtnEpg", "previewMediaBtnColumn"].forEach(function (id) {
+  ["previewMediaBtn", "previewMediaBtnEpg", "previewMediaBtnColumn",
+   "previewMediaBtnColumnBlock"].forEach(function (id) {
     document.getElementById(id).addEventListener("click", openPreviewModal);
   });
   document.getElementById("previewClose").addEventListener("click", closePreviewModal);
@@ -1715,6 +1946,11 @@
     if (e.target === previewModal) closePreviewModal();
   });
   document.addEventListener("keydown", function (e) {
+    // 国家下拉展开时，Esc 只收起下拉，不关闭整个弹窗
+    if (e.key === "Escape" && countryPanel.style.display !== "none") {
+      closeCountryPanel();
+      return;
+    }
     if (e.key === "Escape" && previewModal.classList.contains("visible")) closePreviewModal();
   });
 
@@ -1784,11 +2020,16 @@
     out.forEach(function (n) { if (!seen[n]) { seen[n] = 1; uniq.push(n); } });
     return uniq;
   }
-  // 需要填写【推荐block位】的场景：Tab布局·泳道 / 栏目布局·EPG直播
-  // 其余算法场景（普通泳道 / feed流算法栏目）无此字段，按默认 24 条下发
+  // 需要填写【推荐block位】的场景：
+  //   Tab布局·泳道 / 栏目布局·EPG直播 / 普通泳道且算法场景=首屏+首栏目算法场景
+  // 其余算法场景（watch list / search / feed流算法栏目）无此字段，按默认 24 条下发
   function getPreviewSpec() {
     var inputId = previewMode === "epg" ? "blockPosInputEpg"
       : (previewMode === "tab" ? "blockPosInput" : "");
+    if (previewMode === "columnNormal") {
+      var sceneSel = document.getElementById("algoSceneColumn");
+      inputId = (sceneSel && sceneSel.value === "first_column") ? "blockPosInputColumn" : "";
+    }
     if (!inputId) return { hasBlock: false, positions: [], count: 24, inputId: "" };
     var el = document.getElementById(inputId);
     var pos = parseBlockPositions(el ? el.value : "");
@@ -1805,6 +2046,9 @@
     var who = fetched && idValue()
       ? idWord() + "「" + idValue().replace(/</g, "&lt;") + "」"
       : idWord() + "（待输入）";
+    var countryText = selectedCountryCode()
+      ? "国家 <b>" + selectedCountryLabel() + "</b>"
+      : "国家 <b>未选择</b>";
     var blockText = spec.hasBlock
       ? (spec.count > 0
           ? "推荐block位 <b>" + spec.count + "</b> 个（" + formatPositions(spec.positions) + "）"
@@ -1813,13 +2057,15 @@
     var countText = spec.hasBlock
       ? "算法下发 <b>" + spec.count + "</b> 条媒资" + (spec.count > 0 ? "（与block位一一对应）" : "")
       : "算法下发 <b>24</b> 条媒资（默认）";
-    el.innerHTML = "<span>预览标识：" + who + "</span><span>" + blockText + "</span><span>" + countText + "</span>";
+    el.innerHTML = "<span>" + countryText + "</span><span>预览标识：" + who + "</span>" +
+      "<span>" + blockText + "</span><span>" + countText + "</span>";
     el.classList.toggle("is-warn", spec.hasBlock && spec.count === 0);
   }
   function previewKey() {
     var scene = (previewMode === "columnNormal" || previewMode === "feed")
       ? document.getElementById("algoSceneColumn").value : "";
-    return previewMode + "|" + idType + "|" + idValue() + "|" + scene;
+    // 国家参与算法下发排序：不同国家 / 不同标识 / 不同场景拿到不同媒资
+    return previewMode + "|" + idType + "|" + idValue() + "|" + scene + "|" + selectedCountryCode();
   }
   function takeN(list, n) {
     var out = [];
@@ -1830,13 +2076,14 @@
     var titleEl = document.getElementById("modalTitle");
     var hintEl = document.getElementById("dnumHint");
     var word = idWord();
-    var enter = "输入" + word + "后";
-    var please = "请输入" + word;
+    // 国家 + 标识两项齐备才会返回算法数据
+    var pre = "选择国家并输入" + word + "后";
+    var preEmpty = "请先选择国家，再输入" + word + "并点击「实时预览」";
     var suffix = "（支持设备dnum / 用户userid 两种标识）";
     if (previewMode === "epg") {
       titleEl.textContent = "预览填充内容 · EPG直播";
-      hintEl.textContent = enter + "，实时预览EPG直播栏目算法下发的频道填充数据" + suffix;
-      emptyState.textContent = please + "并点击「实时预览」，查看EPG直播栏目算法下发的频道数据";
+      hintEl.textContent = pre + "，实时预览EPG直播栏目算法下发的频道填充数据" + suffix;
+      emptyState.textContent = preEmpty + "，查看EPG直播栏目算法下发的频道数据";
     } else if (previewMode === "columnOff") {
       titleEl.textContent = "预览填充内容";
       hintEl.textContent = "当前已关闭启用推荐，算法场景下发的媒资数据不可用";
@@ -1844,12 +2091,12 @@
     } else if (previewMode === "columnNormal" || previewMode === "feed") {
       var label = currentSceneLabel();
       titleEl.textContent = "预览填充内容 · " + label;
-      hintEl.textContent = enter + "，实时预览「" + label + "」下发的算法媒资数据" + suffix;
-      emptyState.textContent = please + "并点击「实时预览」，查看「" + label + "」算法下发的媒资数据";
+      hintEl.textContent = pre + "，实时预览「" + label + "」下发的算法媒资数据" + suffix;
+      emptyState.textContent = preEmpty + "，查看「" + label + "」算法下发的媒资数据";
     } else {
       titleEl.textContent = "预览填充内容";
-      hintEl.textContent = enter + "，实时预览算法下发到该" + (idType === "dnum" ? "设备" : "用户") + "的推荐媒资数据" + suffix;
-      emptyState.textContent = please + "并点击「实时预览」，查看算法下发的填充内容";
+      hintEl.textContent = pre + "，实时预览算法下发到该" + (idType === "dnum" ? "设备" : "用户") + "的推荐媒资数据" + suffix;
+      emptyState.textContent = preEmpty + "，查看算法下发的填充内容";
     }
   }
   // 栏目布局·算法泳道底部预览区（普通泳道 8 张卡 / feed流 16 张卡）
@@ -1910,11 +2157,12 @@
         var safeTitle = m.title.replace(/"/g, "&quot;");
         var rank = ("0" + (i + 1)).slice(-2);
         var sceneTag = previewMode === "feed" ? "FEED" : "算法";
+        var bp = blockAt(i);   // 首屏+首栏目算法场景按推荐block位一一对应
         return '<div class="media-card media-card--algo" data-id="' + m.id + '" data-title="' + safeTitle + '"' +
-          ' data-scene="' + sceneLabel + '" data-rank="' + rank + '" data-block="">' +
+          ' data-scene="' + sceneLabel + '" data-rank="' + rank + '" data-block="' + bp + '">' +
           '<div class="media-card__poster" role="img" aria-label="算法推荐媒资海报：' + safeTitle + '" style="background-position:' + posterPosition(i) + ';">' +
           '<span class="media-card__rank">' + rank + '</span>' +
-          '<span class="media-card__scene">' + sceneTag + '</span></div>' +
+          '<span class="media-card__scene">' + sceneTag + '</span>' + blockBadge(bp) + '</div>' +
           '<div class="media-card__title" title="' + safeTitle + '">' + m.title + '</div>' +
           '<div class="media-card__videoid">' + m.id + '</div>' +
           '</div>';
@@ -1951,6 +2199,17 @@
   }
 
   function fetchPreview() {
+    // 条件一：必须选择国家
+    if (!selectedCountryCode()) {
+      countrySelect.classList.add("is-error");
+      countryError.style.display = "block";
+      updatePreviewMeta(true);
+      openCountryPanel();
+      return;
+    }
+    countrySelect.classList.remove("is-error");
+    countryError.style.display = "none";
+    // 条件二：必须输入设备dnum 或 用户userid
     var val = idValue();
     if (!val) {
       dnumInput.classList.add("is-error");
@@ -2079,16 +2338,23 @@
       el.classList.toggle("checked", el.dataset.value === value);
     });
   }
-  function resetPreview() {
+  // 仅作废旧结果，保留已输入的标识值与国家选择
+  function invalidateResults() {
     if (fetchTimer) clearTimeout(fetchTimer);
     emptyState.style.display = "";
     mediaGrid.style.display = "none";
     mediaGrid.innerHTML = "";
+    hideTooltip();
+    updateModalCopy();
+    updatePreviewMeta(!!idValue());
+  }
+  function resetPreview() {
+    invalidateResults();
     dnumInput.value = "";
     dnumInput.classList.remove("is-error");
     dnumError.style.display = "none";
-    hideTooltip();
-    updateModalCopy();
+    countrySelect.classList.remove("is-error");
+    countryError.style.display = "none";
     updatePreviewMeta(false);
   }
   // 两种泳道类型的字段与排布不同，用显式 grid 行/列定位按各自截图 1:1 呈现
@@ -2097,15 +2363,15 @@
     template: "fi-c-template", canvasH: "fi-c-canvasH", canvasW: "fi-c-canvasW",
     blockCount: "fi-c-blockCount", i18n: "fi-c-i18n", adPos: "fi-c-adPos",
     vodJump: "fi-c-vodJump", enableRec: "fi-c-enableRec", algoScene: "fi-c-algoScene",
-    shuffle: "fi-c-shuffle"
+    shuffle: "fi-c-shuffle", blockPos: "fi-c-blockPos"
   };
   var COLUMN_FORM_LAYOUT = {
-    // 普通泳道：布局模板/国际化资源/广告播放位置 → VOD跳转方式/启用推荐/算法场景 → 栏目自动乱序
+    // 普通泳道：布局模板/国际化资源/广告播放位置 → VOD跳转方式/启用推荐/算法场景 → 栏目自动乱序/推荐block位（首屏+首栏目场景）
     normal: {
       layout: [1, 1], block: [1, 2], swimlane: [1, 3],
       template: [2, 1], i18n: [2, 2], adPos: [2, 3],
       vodJump: [3, 1], enableRec: [3, 2], algoScene: [3, 3],
-      shuffle: [4, 1]
+      shuffle: [4, 1], blockPos: [4, 2]
     },
     // feed流算法栏目：布局模板/画布高/画布宽 → 泳道block数量/国际化资源/广告播放位置 → VOD跳转方式/算法场景
     feed: {
@@ -2119,19 +2385,31 @@
     var checked = document.querySelector("#enableRecommendGroupColumn .radio-item.checked");
     return !checked || checked.dataset.value === "yes";
   }
+  // 仅「普通泳道 + 启用推荐=是 + 算法场景=首屏+首栏目算法场景」需要填写推荐block位
+  function needsColumnBlockPos() {
+    return columnSubMode === "normal" && isRecommendOn() &&
+      algoSceneColumn.value === "first_column";
+  }
   function applyColumnFormLayout() {
     var conf = COLUMN_FORM_LAYOUT[columnSubMode] || COLUMN_FORM_LAYOUT.normal;
     var recOn = isRecommendOn();
+    var needBlock = needsColumnBlockPos();
+    var hideAlgo = columnSubMode === "normal" && !recOn;
     Object.keys(COLUMN_ITEM_IDS).forEach(function (key) {
       var el = document.getElementById(COLUMN_ITEM_IDS[key]);
       if (!el) return;
       var pos = conf[key];
       var show = !!pos;
       // 普通泳道且【启用推荐=否】时，不展示算法场景下拉与旁边的预览媒资按钮
-      if (key === "algoScene" && columnSubMode === "normal" && !recOn) show = false;
+      if (key === "algoScene" && hideAlgo) show = false;
+      // 推荐block位只在「首屏+首栏目算法场景」出现
+      if (key === "blockPos") show = needBlock;
       el.style.display = show ? "flex" : "none";
       if (pos) { el.style.gridRow = pos[0]; el.style.gridColumn = pos[1]; }
     });
+    // 预览媒资按钮位置：首屏+首栏目算法场景 → 推荐block位旁；其余算法场景 → 算法场景旁
+    document.getElementById("previewMediaBtnColumn").style.display = (!hideAlgo && !needBlock) ? "" : "none";
+    document.getElementById("previewMediaBtnColumnBlock").style.display = needBlock ? "" : "none";
     document.getElementById("gridColumn").dataset.mode = columnSubMode;
     // 布局模板：普通泳道「请选择」/ feed流【1303】模板
     var tpl = document.getElementById("layoutTemplateColumn");
@@ -2199,6 +2477,9 @@
   });
   swimlaneTypeColumn.addEventListener("change", syncLayout);
   algoSceneColumn.addEventListener("change", function () {
+    // 切到「首屏+首栏目算法场景」时展示推荐block位并把预览按钮移过去
+    applyColumnFormLayout();
+    closePreviewModal();
     updateModalCopy();
     renderColumnPreview();
     resetPreview();
